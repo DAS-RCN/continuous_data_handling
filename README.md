@@ -1,6 +1,6 @@
 # continuous_data_handling
 
-Most DAS acquisitions yield continuous data, which are cumbersome to handle. This repository includes methods for handling continuous DAS data (loading, buffering, data processing...). For now, I implemented a data iterator looping over all files in a folder. It automatically handles I/O, pre-processing, etc in a relatively fast manner and, most importantly, with minimal hassle. 
+Most DAS acquisitions yield continuous data, which are cumbersome to handle. This repository includes methods for handling continuous DAS data (loading, buffering, data processing, space/time downsampling...). For now, I implemented a data iterator looping over all files in a folder. It automatically handles I/O, pre-processing, etc in a relatively fast manner and, most importantly, with minimal hassle. 
 
 Later versions will include a data visualizer, database interface to save events of interest, and viewing of such events. 
 
