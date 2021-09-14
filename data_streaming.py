@@ -12,7 +12,7 @@ if cfg.reading_mode.lower() == 'cloud':
     import gcp_io
 else:
     import glob
-
+from numba import njit, prange
 
 class DataFiles:
 
@@ -36,6 +36,7 @@ class DataFiles:
                 self.all_files.extend(glob.glob(folder_name + '/*.npy'))
                 self.all_files.extend(glob.glob(folder_name + '/*.sgy'))
                 self.all_files.extend(glob.glob(folder_name + '/*.segy'))
+                self.all_files.extend(glob.glob(folder_name + '/*.h5'))
 
             self.all_files.sort()
             self.all_files = self.all_files[cfg.first_file_index:]
@@ -125,6 +126,8 @@ class DataChunk:
                     self.data = load_segy_direct(self.filename, cfg.nt, 0, cfg.n_chan)
                     # For .npy/.npz we cannot do partial reading. For consistency, we read the full dataset from SEG-Y and
                     # crop it later, as we do for .npy/.npz files
+                elif self.filename.endswith('.h5'):
+                    self.data = None # TODO bin
                 else:
                     raise ValueError(
                         'Unsuppported file extension. Received file: {}. '
@@ -161,34 +164,32 @@ class DataChunk:
         decim_n_chan = int(np.floor(self.n_chan / chan_decim_fac))
 
         if overwrite_stream:
+            if chan_decim_fac >= 2:
+                self.data = spatial_stack_downsample(self.data, self.n_chan, self.nt, chan_decim_fac)
+                assert self.data.shape[0] == int(self.n_chan / chan_decim_fac)
+
+                self.n_chan = int(self.n_chan / chan_decim_fac)
+                self.d_chan = self.d_chan * chan_decim_fac
+
             self.data = proc.lpfilter(self.data, self.dt, min(
                 extra_lowpass_freq, 0.8 * decim_nyfreq))
             self.data = self.data[:, 0::dt_decim_fac]
-            decim_nt = self.data.shape[1]
-            self.nt = decim_nt
-            self.n_chan = decim_n_chan
-            self.d_chan *= chan_decim_fac
+            self.nt = self.data.shape[1]
             self.dt *= dt_decim_fac
         else:
             orig_stream = copy.deepcopy(self)
+            if chan_decim_fac >= 2:
+                orig_stream.data = spatial_stack_downsample(orig_stream.data, self.n_chan, self.nt, chan_decim_fac)
+                assert orig_stream.data.shape[0] == int(self.n_chan / chan_decim_fac)
+
+                orig_stream.n_chan = int(self.n_chan / chan_decim_fac)
+                orig_stream.d_chan = self.d_chan * chan_decim_fac
+
             orig_stream.data = proc.lpfilter(orig_stream.data, self.dt, min(
                 extra_lowpass_freq, 0.8 * decim_nyfreq))
             orig_stream.data = orig_stream.data[:, 0::dt_decim_fac]
-            decim_nt = orig_stream.data.shape[1]
-            orig_stream.nt = decim_nt
-            orig_stream.n_chan = decim_n_chan
-            orig_stream.d_chan *= chan_decim_fac
+            orig_stream.nt = orig_stream.data.shape[1]
             orig_stream.dt *= dt_decim_fac
-
-        # Not yet supported
-        if chan_decim_fac >= 2:
-            raise RuntimeError('Channel decimation not yet supported')
-            decim_data = np.zeros(
-                shape=(decim_n_chan, decim_nt), dtype=np.float32)
-            for ch_num in range(decim_n_chan):
-                decim_data[ch_num, :] = np.mean(
-                    time_decim_data[ch_num:ch_num * chan_decim_fac, :])
-            self.data = decim_data
 
         return orig_stream
 
@@ -494,9 +495,14 @@ class DataIterator:
             if 'normalize' in self.proc_steps:
                 overlap_chunk.data = proc.normalization(overlap_chunk.data, cfg.norm_type)
             if 'downsample' in self.proc_steps:
-                overlap_chunk.downsample(cfg.dt_decim_fac, chan_decim_fac=1, overwrite_stream=True)
-            overlap_chunk.cut(chans=(0, nch), samples=(self.internal_overlap-cfg.overlap_samples,
-                                                       nt+self.internal_overlap+cfg.overlap_samples), modify_stream=True)
+                overlap_chunk.downsample(cfg.dt_decim_fac, chan_decim_fac=cfg.n_samp_stack, overwrite_stream=True)
+                self.internal_overlap = int(self.internal_overlap/cfg.dt_decim_fac)
+                self.output_overlap = int(self.output_overlap/cfg.dt_decim_fac)
+
+            overlap_chunk.cut(chans=(0, overlap_chunk.n_chan),
+                              samples=(int(self.internal_overlap-self.output_overlap),
+                                       int(int(self.data.curr_chunk.nt/cfg.dt_decim_fac)+self.internal_overlap+self.output_overlap)),
+                              modify_stream=True)
 
         return overlap_chunk
 
@@ -583,3 +589,14 @@ def load_segy_direct(filename, nt, f_ch, l_ch):
         data[ch, :] = np.fromfile(file_to_read, dtype='>f', count=nt)
 
     return data
+
+
+@njit(parallel=True)
+def spatial_stack_downsample(data, nch, nt, decim_fac):
+    new_nch = int(nch/decim_fac)
+    decim_data = np.zeros(shape=(new_nch, nt), dtype=np.float32)
+    for ch_num in prange(new_nch):
+        for ind in range(decim_fac):
+            decim_data[ch_num, :] += data[ch_num*decim_fac+ind, :]
+    decim_data = 1.0/decim_fac*decim_data
+    return decim_data
