@@ -48,7 +48,7 @@ lp_cutoff = 100.0
 # Cutoff frequency for low-pass filter
 norm_type = 'std'
 # Type of trace-by-trace normalization (see signal_processing for details)
-dt_decim_fac = 2
+dt_decim_fac = 4
 # Integer decimation factor, Anti-alias filter applied beforehand.
 n_ch_stack = 1
 # Number of nearby channels to stack and downsample in space
