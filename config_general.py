@@ -53,7 +53,7 @@ dt_decim_fac = 1
 # Integer decimation factor, Anti-alias filter applied beforehand.
 overlap_samples = 0
 # number of samples (original sampling rate) in the buffer around each data file to be returned.
-n_samp_stack = 1
+n_ch_stack = 1
 # Number of nearby channels to stack and downsample in space
 
 # --- Consistency checks - do not modify --- #
