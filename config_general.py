@@ -29,8 +29,7 @@ gauge_length = 10.0
 
 # --- Processing parameters  --- #
 
-proc_steps = ['median', 'clip', 'bandpass', 'normalize']
-#proc_steps = ['median', 'clip', 'normalize']
+proc_steps = ['median', 'clip', 'bandpass', 'normalize','downsample']
 # Processing steps applied to loaded data. Can be: 'median', 'clip', 'bandpass', 'normalize', 'downsample'
 # median - median filter (sample-by-sample)
 # clip - order filter, percentage chosen by user
@@ -41,7 +40,7 @@ proc_steps = ['median', 'clip', 'bandpass', 'normalize']
 
 clip_perc = 99.0
 # Percentage for clipping
-bp_low = 5.0
+bp_low = 2.0
 # Lower boundary of bandpass applied (Hz)
 bp_high = 100.0
 # Higher boundary of bandpass applied (Hz).
@@ -49,15 +48,16 @@ lp_cutoff = 100.0
 # Cutoff frequency for low-pass filter
 norm_type = 'std'
 # Type of trace-by-trace normalization (see signal_processing for details)
-dt_decim_fac = 1
+dt_decim_fac = 2
 # Integer decimation factor, Anti-alias filter applied beforehand.
-overlap_samples = 0
-# number of samples (original sampling rate) in the buffer around each data file to be returned.
 n_ch_stack = 1
 # Number of nearby channels to stack and downsample in space
+overlap_samples = 0
+# number of samples (original sampling rate) in the buffer around each data file to be returned.
 
 # --- Consistency checks - do not modify --- #
 
+orig_dt = dt
 if data_path.endswith('/'):
     data_path = data_path[:-1]
 
