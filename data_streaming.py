@@ -496,16 +496,9 @@ class DataIterator:
                 overlap_chunk.data = proc.normalization(overlap_chunk.data, cfg.norm_type)
             if 'downsample' in self.proc_steps:
                 overlap_chunk.downsample(cfg.dt_decim_fac, chan_decim_fac=cfg.n_ch_stack, overwrite_stream=True)
-                #self.internal_overlap = int(self.internal_overlap/cfg.dt_decim_fac)
-                #self.output_overlap = int(self.output_overlap/cfg.dt_decim_fac)
-
 
             f_samp = int(self.internal_overlap/cfg.dt_decim_fac)-int(self.output_overlap/cfg.dt_decim_fac)
             l_samp = int(self.data.curr_chunk.nt/cfg.dt_decim_fac) + int(self.internal_overlap/cfg.dt_decim_fac)+int(self.output_overlap/cfg.dt_decim_fac)
-           # overlap_chunk.cut(chans=(0, overlap_chunk.n_chan),
-            #                  samples=(int(self.internal_overlap-self.output_overlap),
-            #                           int(int(self.data.curr_chunk.nt/cfg.dt_decim_fac)+self.internal_overlap+self.output_overlap)),
-            #                 modify_stream=True)
             overlap_chunk.cut(chans=(0, overlap_chunk.n_chan), samples=(f_samp,l_samp), modify_stream=True)
 
         return overlap_chunk
