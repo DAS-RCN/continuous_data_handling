@@ -126,7 +126,8 @@ def linear_fv(data, dx, dt, freqs, vels):
         dx - distance between channels
         dt - time sampling interval
         freqs - frequencies (Hz) at which to estimate the transformation
-        vels - phase velocities (m/s) at which to estimate the transformation
+        vels - phase velocities (m/s) at which to estimate the transformation.
+        IMPORTANT: velocity can be positive or negative. Assure you have the right direction.
     Output:
         frequency-phase velocity image at desired [f,v] values
     """
