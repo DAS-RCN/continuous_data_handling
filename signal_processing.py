@@ -12,18 +12,7 @@ def lpfilter_sos(data, dt, cutoff):
         filtered version of data
     """
     sos = signal.iirfilter(N=4, Wn=[cutoff], btype='lowpass', fs=1/dt, output='sos')
-    nch, nt = np.shape(data)
-    num_sections = int(np.ceil(nt/100000))
-    if num_sections == 1:
-        return np.float32(signal.sosfilt(sos, data, axis=-1))
-    else:
-        win_size = int(nch/num_sections)
-        for i in range(num_sections-1):
-            data[(i-1)*win_size:i*win_size, :] = np.float32(signal.sosfilt(sos, data[(i-1)*win_size:i*win_size, :],
-                                                                           axis=-1))
-        data[(num_sections-1)*win_size:nt, :] = np.float32(signal.sosfilt(sos, data[(num_sections-1)*win_size:nt, :],
-                                                                          axis=-1))
-        return data
+    return np.float32(signal.sosfilt(sos, data, axis=-1))
 
 
 def lpfilter(data, dt, cutoff):
@@ -126,8 +115,7 @@ def linear_fv(data, dx, dt, freqs, vels):
         dx - distance between channels
         dt - time sampling interval
         freqs - frequencies (Hz) at which to estimate the transformation
-        vels - phase velocities (m/s) at which to estimate the transformation.
-        IMPORTANT: velocity can be positive or negative. Assure you have the right direction.
+        vels - phase velocities (m/s) at which to estimate the transformation
     Output:
         frequency-phase velocity image at desired [f,v] values
     """
