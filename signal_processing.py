@@ -2,58 +2,73 @@ import numpy as np
 import math
 from scipy import signal, fft, interpolate
 
-def lpfilter_sos(data, dt, cutoff):
+def lpfilter_sos(data, dt, cutoff, zero_phase=True):
     """" Low-pass filter using the second-order representation Butterworth implementation
     Inputs:
         data - 2D numpy array, of shape [channels,samples]
         dt - sampling interval (seconds)
         cutoff - cutoff frequency (Hz)
+        zero_phase - Boolean flag for applying filter twice (in forward and backward directions)
     Output:
         filtered version of data
     """
     sos = signal.iirfilter(N=4, Wn=[cutoff], btype='lowpass', fs=1/dt, output='sos')
-    return np.float32(signal.sosfilt(sos, data, axis=-1))
+    if zero_phase:
+        return np.float32(signal.sosfilt(sos, data, axis=-1))
+    else:
+        return np.float32(signal.sosfiltfilt(sos, data, axis=-1))
 
 
-def lpfilter(data, dt, cutoff):
+def lpfilter(data, dt, cutoff, zero_phase=True):
     """" Low-pass filter using the Butterworth implementation
     Inputs:
         data - 2D numpy array, of shape [channels,samples]
         dt - sampling interval (seconds)
         cutoff - cutoff frequency (Hz)
+        zero_phase - Boolean flag for applying filter twice (in forward and backward directions)
     Output:
         filtered version of data
     """
     b, a = signal.butter(N=4, Wn=cutoff, btype='low', fs=1/dt)
-    return np.float32(signal.filtfilt(b, a, data, axis=- 1, padtype='odd'))
+    if zero_phase:
+        return np.float32(signal.filtfilt(b, a, data, axis=- 1, padtype='odd'))
+    else
+        return np.float32(signal.filt(b, a, data, axis=- 1, padtype='odd'))
 
-
-def bpfilter_sos(data, dt, bp_low, bp_high):
+def bpfilter_sos(data, dt, bp_low, bp_high, zero_phase=True):
     """" Band-pass filter using the SOS implementation
     Inputs:
         data - 2D numpy array, of shape [channels,samples]
         dt - sampling interval (seconds)
         bp_low - minimal frequency in the passband (Hz)
         bp_high - maximal frequency in the passband (Hz)
+        zero_phase - Boolean flag for applying filter twice (in forward and backward directions)
     Output:
         filtered version of data
     """
     sos = signal.iirfilter(N=4, Wn=[bp_low, bp_high], btype='bandpass', fs=1/dt, output='sos')
-    return np.float32(signal.sosfilt(sos, data, axis=-1))
+    if zero_phase:
+        return np.float32(signal.sosfiltfilt(sos, data, axis=-1))
+    else:
+        return np.float32(signal.sosfilt(sos, data, axis=-1))
 
 
-def bpfilter(data, dt, bp_low, bp_high):
+def bpfilter(data, dt, bp_low, bp_high, zero_phase=True):
     """" Band-pass filter using the second-order representation Butterworth
     Inputs:
         data - 2D numpy array, of shape [channels,samples]
         dt - sampling interval (seconds)
         bp_low - minimal frequency in the passband (Hz)
         bp_high - maximal frequency in the passband (Hz)
+        zero_phase - Boolean flag for applying filter twice (in forward and backward directions)
     Output:
         filtered version of data
     """
     b, a = signal.butter(N=4, Wn=[bp_low, bp_high], btype='bandpass', fs=1/dt)
-    return np.float32(signal.filtfilt(b, a, data, axis=- 1, padtype='odd'))
+    if zero_phase:
+        return np.float32(signal.filtfilt(b, a, data, axis=- 1, padtype='odd'))
+    else:
+        return np.float32(signal.filt(b, a, data, axis=- 1, padtype='odd'))
 
 
 def remove_median(data):
